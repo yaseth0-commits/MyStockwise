@@ -785,7 +785,7 @@ function hideError() {
 }
 
 // ← After deploying your Cloudflare Worker, replace this URL with your worker URL
-const WORKER_URL = 'https://YOUR_WORKER.YOUR_ACCOUNT.workers.dev';
+const WORKER_URL = 'https://round-lab-3514.upulguna.workers.dev';
 
 async function fetchRatios(tickers) {
   const res = await fetch(`${WORKER_URL}?tickers=${encodeURIComponent(tickers.join(','))}`);
