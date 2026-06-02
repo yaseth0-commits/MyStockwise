@@ -802,8 +802,9 @@ async function fetchRatios(tickers) {
     results[ticker] = {
       color:    COLORS[i],
       name:     d.name  || ticker,
-      price:    d.price ?? null,
-      change:   d.change ?? null,
+      price:     d.price ?? null,
+      change:    d.change ?? null,
+      changePct: d.changePct ?? null,
       error:    d.error  || null,
       pe:       clamp(d.pe,       1000),
       peg:      clamp(d.peg,      100),
@@ -866,6 +867,7 @@ function renderResults(tickers, data) {
           ${d.error
             ? `<div style="font-family:var(--mono);font-size:10px;color:var(--red);max-width:160px;text-align:right;line-height:1.4">${d.error}</div>`
             : `${priceStr ? `<div style="font-family:var(--mono);font-size:14px;font-weight:500">${priceStr} <span style="color:${changeColor};font-size:11px">${changeStr}</span></div>` : ''}
+               ${d.changePct != null ? `<div style="font-family:var(--mono);font-size:12px;font-weight:500;color:${d.changePct >= 0 ? 'var(--green)' : 'var(--red)'};">${d.changePct >= 0 ? '▲' : '▼'} ${Math.abs(d.changePct).toFixed(2)}%</div>` : ''}
                ${s !== null ? `<div class="tc-score" style="color:${d.color}">${s}</div><div class="tc-score-label">overall score</div>` : ''}`
           }
         </div>
