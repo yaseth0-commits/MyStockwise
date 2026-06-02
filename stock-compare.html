@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stockwise — Compare Stocks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0008;
+    --surface: #1a0812;
+    --surface2: #22101a;
+    --border: rgba(255,220,180,0.07);
+    --border2: rgba(255,220,180,0.13);
+    --accent: #f0c040;
+    --accent-dim: rgba(240,192,64,0.12);
+    --accent-dim2: rgba(240,192,64,0.06);
+    --text: #f5efe8;
+    --muted: #7a6058;
+    --muted2: #a89080;
+    --green: #00c98a;
+    --red: #ff5c5c;
+    --yellow: #f5c542;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--display);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(201,169,110,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(201,169,110,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orb */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(120,20,50,0.35) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 20px 80px; }
+
+  /* Header */
+  header {
+    padding: 48px 0 40px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 16px rgba(201,169,110,0.3);
+  }
+
+  .logo-mark svg { width: 18px; height: 18px; }
+
+  .logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .tagline {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+    margin-top: 36px;
+    text-align: right;
+  }
+
+  /* Hero */
+  .hero {
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .hero h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 span {
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted2);
+    line-height: 1.7;
+    max-width: 460px;
+  }
+
+  /* Input section */
+  .input-section {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 32px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .input-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+  }
+
+  .ticker-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 540px) {
+    .ticker-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .ticker-wrap {
+    position: relative;
+  }
+
+  .ticker-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 10px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  .ticker-input::placeholder {
+    color: var(--muted);
+    letter-spacing: 0;
+    font-size: 12px;
+    text-transform: none;
+  }
+
+  .ticker-input:focus {
+    border-color: var(--accent);
+    background: rgba(201,169,110,0.04);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.12);
+  }
+
+  .ticker-input.filled {
+    border-color: rgba(201,169,110,0.35);
+    color: var(--text);
+  }
+
+  .compare-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #0a0a0f;
+    border: none;
+    border-radius: 12px;
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .compare-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(201,169,110,0.35);
+  }
+
+  .compare-btn:active { transform: translateY(0); }
+
+  .compare-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .compare-btn svg { width: 18px; height: 18px; }
+
+
+  /* Loading */
+  #loadingState {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 0.8s linear infinite;
+  }
+
+  .loading-text {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted2);
+  }
+
+  .loading-tickers {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  /* Results */
+  #resultsSection { display: none; animation: fadeUp 0.5s ease both; }
+
+  /* Ticker cards row */
+  .ticker-cards {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .ticker-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .tc-left { display: flex; align-items: center; gap: 12px; }
+
+  .tc-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tc-symbol {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 1px;
+  }
+
+  .tc-name {
+    font-size: 12px;
+    color: var(--muted2);
+    margin-top: 1px;
+  }
+
+  .tc-score {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 300;
+  }
+
+  .tc-score-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Ratio table */
+  .ratio-section {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .ratio-header {
+    padding: 20px 28px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .ratio-header-title {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+
+  .ratio-header-sub {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    margin-left: auto;
+  }
+
+  .ratio-row {
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .ratio-row:last-child { border-bottom: none; }
+  .ratio-row:hover { background: var(--surface2); }
+
+  .ratio-top {
+    display: flex;
+    align-items: center;
+    padding: 18px 0 6px;
+    gap: 12px;
+  }
+
+  .ratio-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    min-width: 130px;
+  }
+
+  .ratio-what {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    cursor: help;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
+
+  .ratio-values {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+  }
+
+  .ratio-chip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    min-width: 72px;
+    transition: border-color 0.2s;
+    position: relative;
+  }
+
+  .ratio-chip.best {
+    border-color: rgba(0,201,138,0.4);
+    background: rgba(0,201,138,0.06);
+  }
+
+  .ratio-chip.worst {
+    border-color: rgba(255,92,92,0.3);
+    background: rgba(255,92,92,0.04);
+  }
+
+  .chip-ticker {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text);
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
+  .chip-val {
+    font-family: var(--mono);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .ratio-chip.best .chip-val { color: var(--green); }
+  .ratio-chip.worst .chip-val { color: var(--red); }
+
+  .chip-badge {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    font-family: var(--mono);
+    padding: 1px 5px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .chip-badge.best-badge { background: var(--green); color: #0a0a0f; }
+  .chip-badge.worst-badge { background: var(--red); color: #fff; }
+
+  /* Bar race */
+  .bar-track {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Verdict */
+  .verdict-section {
+    background: var(--accent-dim2);
+    border: 1px solid rgba(201,169,110,0.18);
+    border-radius: 20px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    animation: fadeUp 0.5s 0.2s ease both;
+  }
+
+  .verdict-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .verdict-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .verdict-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+
+  .verdict-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted2);
+    line-height: 1.9;
+  }
+
+  .verdict-text strong { color: var(--text); font-weight: 500; }
+
+  /* Glossary */
+  .glossary {
+    margin-top: 32px;
+    border-top: 1px solid var(--border);
+    padding-top: 32px;
+  }
+
+  .glossary-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .glossary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .g-ratio {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .g-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .g-desc {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted2);
+    line-height: 1.7;
+  }
+
+  .g-tip {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+  }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,92,92,0.07);
+    border: 1px solid rgba(255,92,92,0.2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red);
+    display: none;
+    margin-bottom: 20px;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.8;
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Legend */
+  .legend-row {
+    display: flex;
+    gap: 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text);
+    padding: 12px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 18 18" fill="none">
+          <path d="M3 14L7 8L11 11L15 4" stroke="#0a0a0f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="logo-text">Stock<span>wise</span></div>
+    </div>
+    <div class="tagline">Compare · Learn · Invest</div>
+  </header>
+
+  <section class="hero">
+    <h1>Understand stocks<br><span>before you buy.</span></h1>
+    <p>Enter up to 5 tickers. We'll break down 6 key ratios in plain English — no finance degree needed.</p>
+  </section>
+
+  <section class="input-section">
+    <div class="input-label">Stock symbols</div>
+    <div class="ticker-grid">
+      <div class="ticker-wrap"><input class="ticker-input" id="t1" type="text" maxlength="5" placeholder="AAPL" autocomplete="off" spellcheck="false"></div>
+      <div class="ticker-wrap"><input class="ticker-input" id="t2" type="text" maxlength="5" placeholder="MSFT" autocomplete="off" spellcheck="false"></div>
+      <div class="ticker-wrap"><input class="ticker-input" id="t3" type="text" maxlength="5" placeholder="NVDA" autocomplete="off" spellcheck="false"></div>
+      <div class="ticker-wrap"><input class="ticker-input" id="t4" type="text" maxlength="5" placeholder="TSLA" autocomplete="off" spellcheck="false"></div>
+      <div class="ticker-wrap"><input class="ticker-input" id="t5" type="text" maxlength="5" placeholder="Optional" autocomplete="off" spellcheck="false"></div>
+    </div>
+
+    <button class="compare-btn" id="compareBtn" onclick="runComparison()">
+      <svg viewBox="0 0 18 18" fill="none"><path d="M3 14L7 8L11 11L15 4" stroke="#0a0a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Analyze these stocks
+    </button>
+
+  </section>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div id="loadingState">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Fetching live data…</div>
+    <div class="loading-tickers" id="loadingTickers"></div>
+  </div>
+
+  <div id="resultsSection">
+    <div class="ticker-cards" id="tickerCards"></div>
+    <div class="ratio-section" id="ratioTable"></div>
+    <div class="verdict-section" id="verdictSection"></div>
+  </div>
+
+  <div class="glossary">
+    <div class="glossary-title">// What do these ratios mean?</div>
+    <div class="glossary-grid">
+      <div class="glossary-card">
+        <div class="g-ratio">P/E</div>
+        <div class="g-name">Price-to-Earnings</div>
+        <div class="g-desc">How much you pay for every $1 the company earns. A P/E of 20 means you're paying $20 for each $1 of annual profit.</div>
+        <span class="g-tip">Lower = cheaper relative to earnings</span>
+      </div>
+      <div class="glossary-card">
+        <div class="g-ratio">PEG</div>
+        <div class="g-name">Price/Earnings-to-Growth</div>
+        <div class="g-desc">P/E adjusted for how fast the company is growing. A PEG under 1 often signals the stock may be undervalued for its growth rate.</div>
+        <span class="g-tip">Under 1.0 is generally attractive</span>
+      </div>
+      <div class="glossary-card">
+        <div class="g-ratio">Div. Yield</div>
+        <div class="g-name">Dividend Yield</div>
+        <div class="g-desc">The annual cash payout as a % of the stock price. Great for investors who want income, not just price appreciation.</div>
+        <span class="g-tip">Higher = more income per dollar</span>
+      </div>
+      <div class="glossary-card">
+        <div class="g-ratio">Payout</div>
+        <div class="g-name">Payout Ratio</div>
+        <div class="g-desc">What % of earnings is paid out as dividends. Very high ratios (>80%) can be hard to sustain long-term if profits dip.</div>
+        <span class="g-tip">40–60% is often considered healthy</span>
+      </div>
+      <div class="glossary-card">
+        <div class="g-ratio">P/B</div>
+        <div class="g-name">Price-to-Book</div>
+        <div class="g-desc">Compares market price to the company's net assets. Under 1 means the market values the company less than its book value.</div>
+        <span class="g-tip">Lower = closer to asset value</span>
+      </div>
+      <div class="glossary-card">
+        <div class="g-ratio">ROE</div>
+        <div class="g-name">Return on Equity</div>
+        <div class="g-desc">How efficiently the company turns shareholder money into profit. Warren Buffett loves companies with consistently high ROE.</div>
+        <span class="g-tip">Above 15% is considered strong</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    Data provided by Yahoo Finance · For educational purposes only<br>
+    Not financial advice · Always do your own research before investing
+  </div>
+
+</div>
+
+<script>
+const COLORS = ['#c9a96e','#e8c4a0','#d4845a','#b8860b','#e0c068'];
+const COMPANY_NAMES = {};
+
+const RATIOS = [
+  { key:'pe',       label:'P/E Ratio',      abbr:'P/E',     hint:'Price ÷ Earnings. Lower = cheaper.',              lowerBetter:true,  format: v => v == null ? '—' : v.toFixed(1)+'x' },
+  { key:'peg',      label:'PEG Ratio',      abbr:'PEG',     hint:'P/E ÷ Growth Rate. Under 1 = potentially cheap.', lowerBetter:true,  format: v => v == null ? '—' : v.toFixed(2) },
+  { key:'divYield', label:'Div. Yield',     abbr:'Yield',   hint:'Annual dividend ÷ stock price.',                  lowerBetter:false, format: v => v == null ? '—' : v.toFixed(2)+'%' },
+  { key:'payout',   label:'Payout Ratio',   abbr:'Payout',  hint:'% of earnings paid as dividends.',                lowerBetter:null,  format: v => v == null ? '—' : v.toFixed(1)+'%' },
+  { key:'pb',       label:'P/B Ratio',      abbr:'P/B',     hint:'Price ÷ Book Value. Lower = closer to asset value.',lowerBetter:true, format: v => v == null ? '—' : v.toFixed(2)+'x' },
+  { key:'roe',      label:'ROE',            abbr:'ROE',     hint:'Return on Equity. Higher = more efficient.',      lowerBetter:false, format: v => v == null ? '—' : v.toFixed(1)+'%' },
+];
+
+function getTickers() {
+  return ['t1','t2','t3','t4','t5']
+    .map(id => document.getElementById(id).value.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = '⚠ ' + msg;
+  el.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+// ← After deploying your Cloudflare Worker, replace this URL with your worker URL
+const WORKER_URL = 'https://round-lab-3514.upulguna.workers.dev';
+
+async function fetchRatios(tickers) {
+  const res = await fetch(`${WORKER_URL}?tickers=${encodeURIComponent(tickers.join(','))}`);
+  if (!res.ok) throw new Error(`Worker error ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+
+  const clamp = (v, max) => v !== null && isFinite(v) && Math.abs(v) < max ? v : null;
+  const pos   = (v, max) => v !== null && isFinite(v) && v > 0 && (!max || v < max) ? v : null;
+
+  const results = {};
+  tickers.forEach((ticker, i) => {
+    const d = data[ticker] || {};
+    results[ticker] = {
+      color:    COLORS[i],
+      name:     d.name  || ticker,
+      price:    d.price ?? null,
+      change:   d.change ?? null,
+      error:    d.error  || null,
+      pe:       clamp(d.pe,       1000),
+      peg:      clamp(d.peg,      100),
+      divYield: pos(d.divYield,   50),
+      payout:   pos(d.payout),
+      pb:       pos(d.pb,         500),
+      roe:      d.roe !== null && isFinite(d.roe) ? d.roe : null,
+    };
+  });
+  return results;
+}
+
+function scoreStock(ticker, data, tickers) {
+  let score = 0, count = 0;
+  const scored = [
+    { key:'pe',       lowerBetter: true },
+    { key:'peg',      lowerBetter: true },
+    { key:'divYield', lowerBetter: false },
+    { key:'pb',       lowerBetter: true },
+    { key:'roe',      lowerBetter: false },
+  ];
+  scored.forEach(({ key, lowerBetter }) => {
+    const vals = tickers.map(t => data[t][key]).filter(v => v !== null);
+    if (vals.length < 2) return;
+    const v = data[ticker][key];
+    if (v === null) return;
+    const min = Math.min(...vals), max = Math.max(...vals);
+    if (max === min) { score += 50; count++; return; }
+    const norm = (v - min) / (max - min);
+    score += lowerBetter ? (1 - norm) * 100 : norm * 100;
+    count++;
+  });
+  return count > 0 ? Math.round(score / count) : null;
+}
+
+function renderResults(tickers, data) {
+  // Score each ticker
+  const scores = {};
+  tickers.forEach(t => { scores[t] = scoreStock(t, data, tickers); });
+
+  // Ticker cards
+  const cardsEl = document.getElementById('tickerCards');
+  cardsEl.style.gridTemplateColumns = `repeat(${Math.min(tickers.length, 3)}, 1fr)`;
+  cardsEl.innerHTML = tickers.map((t, i) => {
+    const d = data[t];
+    const s = scores[t];
+    const priceStr = d.price ? `$${d.price.toFixed(2)}` : '';
+    const changeStr = d.change != null ? (d.change >= 0 ? `+${d.change.toFixed(2)}` : `${d.change.toFixed(2)}`) : '';
+    const changeColor = d.change >= 0 ? 'var(--green)' : 'var(--red)';
+    return `
+      <div class="ticker-card" style="animation-delay:${i*0.07}s${d.error ? ';opacity:0.6' : ''}">
+        <div class="tc-left">
+          <div class="tc-dot" style="background:${d.color}"></div>
+          <div>
+            <div class="tc-symbol">${t}</div>
+            <div class="tc-name">${(d.name || '').substring(0,22)}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          ${d.error
+            ? `<div style="font-family:var(--mono);font-size:10px;color:var(--red);max-width:160px;text-align:right;line-height:1.4">${d.error}</div>`
+            : `${priceStr ? `<div style="font-family:var(--mono);font-size:14px;font-weight:500">${priceStr} <span style="color:${changeColor};font-size:11px">${changeStr}</span></div>` : ''}
+               ${s !== null ? `<div class="tc-score" style="color:${d.color}">${s}</div><div class="tc-score-label">overall score</div>` : ''}`
+          }
+        </div>
+      </div>`;
+  }).join('');
+
+  // Ratio table
+  const tableEl = document.getElementById('ratioTable');
+  let html = `
+    <div class="ratio-header">
+      <div class="ratio-header-title">Ratio breakdown</div>
+      <div class="ratio-header-sub">${tickers.length} stocks compared</div>
+    </div>`;
+
+  RATIOS.forEach(ratio => {
+    const vals = tickers.map(t => data[t][ratio.key]);
+    const nums = vals.filter(v => v !== null);
+    let best = null, worst = null;
+    if (nums.length > 1 && ratio.lowerBetter !== null) {
+      best  = ratio.lowerBetter ? Math.min(...nums) : Math.max(...nums);
+      worst = ratio.lowerBetter ? Math.max(...nums) : Math.min(...nums);
+    }
+    const maxAbs = nums.length ? Math.max(...nums.map(Math.abs)) : 1;
+
+    html += `<div class="ratio-row">
+      <div class="ratio-top">
+        <div class="ratio-name">${ratio.label}</div>
+        <div class="ratio-what" title="${ratio.hint}">? ${ratio.hint}</div>
+      </div>
+      <div class="ratio-values">`;
+
+    tickers.forEach((t, i) => {
+      const v = data[t][ratio.key];
+      const isBest  = v !== null && v === best;
+      const isWorst = v !== null && v === worst;
+      const cls = isBest ? 'best' : isWorst ? 'worst' : '';
+      const barPct = v !== null && maxAbs > 0 ? Math.min(Math.abs(v) / maxAbs * 100, 100) : 0;
+      const barColor = isBest ? 'var(--green)' : isWorst ? 'var(--red)' : data[t].color;
+      html += `
+        <div class="ratio-chip ${cls}">
+          ${isBest  ? '<span class="chip-badge best-badge">BEST</span>' : ''}
+          ${isWorst ? '<span class="chip-badge worst-badge">WORST</span>' : ''}
+          <div class="chip-ticker">${t}</div>
+          <div class="chip-val">${ratio.format(v)}</div>
+          <div class="bar-track" style="width:100%">
+            <div class="bar-fill" style="width:0%;background:${barColor}" data-target="${barPct}"></div>
+          </div>
+        </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  html += `<div class="legend-row">
+    <span><span class="legend-dot" style="background:var(--green)"></span>Best in group</span>
+    <span><span class="legend-dot" style="background:var(--red)"></span>Worst in group</span>
+    <span style="margin-left:auto;color:var(--muted)">Trailing twelve months · via Yahoo Finance</span>
+  </div>`;
+
+  tableEl.innerHTML = html;
+
+  // Animate bars after render
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(el => {
+      el.style.width = el.dataset.target + '%';
+    });
+  }, 100);
+
+  // Verdict
+  const sorted = [...tickers].sort((a,b) => (scores[b]||0) - (scores[a]||0));
+  const top = sorted[0];
+  const topData = data[top];
+  const verdictLines = [];
+
+  if (scores[top] !== null) {
+    verdictLines.push(`<strong>${top}</strong> scores highest overall (${scores[top]}/100) across the ratios compared.`);
+  }
+
+  const cheapPE = tickers.filter(t => data[t].pe !== null).sort((a,b) => data[a].pe - data[b].pe)[0];
+  if (cheapPE) verdictLines.push(`On valuation, <strong>${cheapPE}</strong> has the lowest P/E at ${data[cheapPE].pe?.toFixed(1)}x — you're paying less for each dollar of earnings.`);
+
+  const highYield = tickers.filter(t => data[t].divYield !== null && data[t].divYield > 0).sort((a,b) => data[b].divYield - data[a].divYield)[0];
+  if (highYield) verdictLines.push(`For income investors, <strong>${highYield}</strong> offers the highest dividend yield at ${data[highYield].divYield?.toFixed(2)}%.`);
+
+  const highROE = tickers.filter(t => data[t].roe !== null).sort((a,b) => data[b].roe - data[a].roe)[0];
+  if (highROE) verdictLines.push(`<strong>${highROE}</strong> generates the most profit per shareholder dollar (ROE: ${data[highROE].roe?.toFixed(1)}%) — a sign of management efficiency.`);
+
+  verdictLines.push(`Remember: no single ratio tells the whole story. Use these as a starting point for deeper research.`);
+
+  document.getElementById('verdictSection').innerHTML = `
+    <div class="verdict-header">
+      <div class="verdict-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2L10 6H14L11 9L12 13L8 11L4 13L5 9L2 6H6L8 2Z" fill="#0a0a0f"/>
+        </svg>
+      </div>
+      <div class="verdict-title">Plain-English Takeaway</div>
+    </div>
+    <div class="verdict-text">${verdictLines.map(l => `<p style="margin-bottom:8px">${l}</p>`).join('')}</div>`;
+
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'block';
+}
+
+async function runComparison() {
+  const tickers = getTickers();
+  if (tickers.length === 0) { showError('Please enter at least one stock symbol.'); return; }
+
+  hideError();
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('loadingTickers').textContent = tickers.join('  ·  ');
+  document.getElementById('compareBtn').disabled = true;
+
+  try {
+    const data = await fetchRatios(tickers);
+    renderResults(tickers, data);
+  } catch(e) {
+    document.getElementById('loadingState').style.display = 'none';
+    showError('Could not fetch data. Check your ticker symbols and try again.');
+  }
+
+  document.getElementById('compareBtn').disabled = false;
+}
+
+// Persist and restore tickers
+function saveTickers() {
+  const vals = ['t1','t2','t3','t4','t5'].map(id => document.getElementById(id).value.trim());
+  localStorage.setItem('sw_tickers', JSON.stringify(vals));
+}
+const savedTickers = JSON.parse(localStorage.getItem('sw_tickers') || '[]');
+
+// Input polish
+['t1','t2','t3','t4','t5'].forEach((id, i) => {
+  const el = document.getElementById(id);
+  if (savedTickers[i]) { el.value = savedTickers[i]; el.classList.add('filled'); }
+  el.addEventListener('input', () => {
+    el.value = el.value.toUpperCase();
+    el.classList.toggle('filled', el.value.length > 0);
+    saveTickers();
+  });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter') runComparison(); });
+});
+</script>
+</body>
+</html>
